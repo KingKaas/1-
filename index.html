@@ -11,7 +11,43 @@
     #hint{font-size:20px}
     #emojiResult{font-size:42px;line-height:1}
     #score{font-size:18px;margin-bottom:4px;color:#00d000}
-    #reaction{min-height:28px;margin:6px 0 4px 0;font-size:18px;opacity:.95}
+
+    /* منطقة الرسائل التشجيعية */
+    #reaction {
+      min-height: 40px;
+      margin: 8px 0 6px;
+      display: flex;
+      justify-content: center;
+    }
+    .reaction-bubble {
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-size: 18px;
+      font-weight: 700;
+      color: #111;
+      box-shadow: 0 0 18px rgba(255,255,255,.35), 0 0 6px rgba(255,255,255,.6) inset;
+      backdrop-filter: blur(2px);
+      animation: popIn .25s ease-out, glowPulse 1.6s ease-in-out infinite;
+      user-select: none;
+      white-space: nowrap;
+    }
+    .b-right-1 { background: linear-gradient(135deg,#9cff9c,#24ff72); }
+    .b-right-2 { background: linear-gradient(135deg,#b9fffb,#67ffd1); }
+    .b-right-3 { background: linear-gradient(135deg,#ffe7a1,#b6ff7a); }
+    .b-wrong-1{ background: linear-gradient(135deg,#ffd1d1,#ff7a7a); }
+    .b-wrong-2{ background: linear-gradient(135deg,#ffd8a8,#ff9a5f); }
+    .b-wrong-3{ background: linear-gradient(135deg,#ffc0f5,#ff7ee7); }
+
+    @keyframes glowPulse {
+      0%   { box-shadow: 0 0 10px rgba(255,255,255,.25), 0 0 0 rgba(255,255,255,0) inset; transform: translateY(0) scale(1); }
+      50%  { box-shadow: 0 0 22px rgba(255,255,255,.55), 0 0 10px rgba(255,255,255,.35) inset; transform: translateY(-2px) scale(1.03); }
+      100% { box-shadow: 0 0 10px rgba(255,255,255,.25), 0 0 0 rgba(255,255,255,0) inset; transform: translateY(0) scale(1); }
+    }
+    @keyframes popIn {
+      0% { transform: scale(.7); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
     #wordBoxes{display:flex;justify-content:center;gap:10px;margin:12px 0}
     .letter-box{width:40px;height:40px;background:#333;border:2px solid #fff;font-size:24px;display:flex;justify-content:center;align-items:center}
     #keyboard{display:flex;flex-wrap:wrap;max-width:420px;margin:0 auto;justify-content:center}
@@ -108,7 +144,7 @@
   ];
   const msgsWrong = [
     "الله مالك! 😅", "حد عاملك عمل؟ 🧿", "البس نظارة 🤓",
-    "قلبها صح بتجي! 💪", "قريب توصلها، ركّز شوي 👀", "لا تحاتّي، حاول مرة ثانية 🔁"
+    "قلبها صح بتجي! 💪", "قريب توصلها، ركّز شوي 👀", "لا تحاتي، حاول مرة ثانية 🔁"
   ];
   const rnd = a => a[Math.floor(Math.random()*a.length)];
 
@@ -117,6 +153,7 @@
   const maxAttempts=5;
   let wrongAttempts=0, score=0, totalAnswered=0, totalCorrect=0;
 
+  // عناصر DOM
   const letters="أبجدهوزحطيكلمنسعفصقرشتثخذضظغئءؤىةلا";
   const hintEl=document.getElementById("hint");
   const wordBoxes=document.getElementById("wordBoxes");
@@ -167,6 +204,22 @@
     });
   }
 
+  // فقاعات رد الفعل الملونة
+  function showReaction(text, type) {
+    const rightSkins = ["b-right-1","b-right-2","b-right-3"];
+    const wrongSkins = ["b-wrong-1","b-wrong-2","b-wrong-3"];
+    const pick = arr => arr[Math.floor(Math.random()*arr.length)];
+
+    reaction.innerHTML = "";
+    const span = document.createElement("span");
+    span.className = `reaction-bubble ${type === "right" ? pick(rightSkins) : pick(wrongSkins)}`;
+    span.textContent = text;
+    reaction.appendChild(span);
+
+    // اختياري: إخفاء تلقائي بعد 2.2 ثانية
+    setTimeout(()=> { if(reaction.contains(span)) reaction.removeChild(span); }, 2200);
+  }
+
   function handleGuess(letter, btn){
     btn.disabled=true;
     let found=false;
@@ -180,14 +233,14 @@
     }
 
     if(!found){
-      reaction.textContent = rnd(msgsWrong);
+      showReaction(rnd(msgsWrong), "wrong");
       document.getElementById(`ball-${wrongAttempts}`).classList.add("used");
       wrongAttempts++;
       if(wrongAttempts>=maxAttempts){
         endGame(false, true); // تنهي اللعبة كلها
       }
     }else{
-      reaction.textContent = rnd(msgsRight);
+      showReaction(rnd(msgsRight), "right");
       if(guessedLetters.join("")===currentWord.word){
         endGame(true, false);
       }
@@ -227,12 +280,12 @@
       <div>إجمالي الأسئلة المجابة: <b>${totalAnswered}</b></div>
     `;
     gameOverPanel.style.display="block";
-    restartBtn.style.display="inline-block";   // ← إصلاح: إظهار زر الإعادة
+    restartBtn.style.display="inline-block";   // إظهار زر الإعادة
   }
 
   function resetAll(){
     score=0; totalAnswered=0; totalCorrect=0; wrongAttempts=0;
-    emojiResult.textContent=""; reaction.textContent="";
+    emojiResult.textContent=""; reaction.innerHTML="";
     scoreEl.textContent="النقاط: 0";
     gameOverPanel.style.display="none";
     restartBtn.style.display="none";
@@ -242,7 +295,7 @@
   }
 
   function startGame(){
-    reaction.textContent="";
+    reaction.innerHTML="";
     emojiResult.textContent="";
     if(availableWords.length===0){ showGameOver(); return; }
 
@@ -266,4 +319,3 @@
 </script>
 </body>
 </html>
-
